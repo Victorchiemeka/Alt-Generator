@@ -136,42 +136,101 @@ function handleFile(file) {
  * @param {string} imageData Base64 encoded image data.
  * @returns {Promise<string>} The generated alt text.
  */
-async function generateAltText(imageData) {
-    const prompt = "Generate a concise and descriptive alt text for this image. The alt text should be suitable for screen readers, focusing on the main subject, setting, and context. Do not include introductory phrases like 'Image of' or 'A picture of'. Be direct and informative.";
+// async function generateAltText(imageData) {
+//     const prompt = "Generate a concise and descriptive alt text for this image. The alt text should be suitable for screen readers, focusing on the main subject, setting, and context. Do not include introductory phrases like 'Image of' or 'A picture of'. Be direct and informative.";
 
+//     const payload = {
+//         contents: [{
+//             parts: [
+//                 { text: prompt },
+//                 { inlineData: { mimeType: "image/jpeg", data: imageData } }
+//             ]
+//         }],
+//     };
+
+//     const apiKey = "AIzaSyBupM9Ei4g5Q7xlh2-oW3i3NwCY5blqGOU"; // API key is handled by the environment
+//     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+//     const response = await fetch(apiUrl, {
+//         method: 'POST',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify(payload)
+//     });
+
+//     if (!response.ok) {
+//         const errorBody = await response.text();
+//         console.error("API Error Response:", errorBody);
+//         throw new Error(`API request failed with status ${response.status}`);
+//     }
+
+//     const result = await response.json();
+    
+//     if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
+//         return result.candidates[0].content.parts[0].text.trim();
+//     } else {
+//         console.error("Unexpected API response structure:", result);
+//         throw new Error("Could not extract text from the API response.");
+//     }
+// }
+
+
+
+
+/**
+ * Calls the DeepSeek API to generate text from a prompt.
+ * NOTE: This function does NOT use image data.
+ * @param {string} textPrompt The text prompt to send to the model.
+ * @returns {Promise<string>} The generated text.
+ */
+async function generateTextWithDeepSeek(textPrompt) {
+    // IMPORTANT: You must get your own API key from platform.deepseek.com
+    const deepseekApiKey = "sk-6e39154a3f844f77ba1bc83fa4fadfa0"; 
+
+    const apiUrl = "https://api.deepseek.com/chat/completions";
+
+    // The payload is different. It's a `messages` array, not `contents`.
     const payload = {
-        contents: [{
-            parts: [
-                { text: prompt },
-                { inlineData: { mimeType: "image/jpeg", data: imageData } }
-            ]
-        }],
+        model: "deepseek-reasoner", // Specify the text model
+        messages: [
+            {
+                "role": "system",
+                "content": "You are a helpful assistant."
+            },
+            {
+                "role": "user",
+                "content": textPrompt
+            }
+        ]
     };
-
-    const apiKey = "AIzaSyBupM9Ei4g5Q7xlh2-oW3i3NwCY5blqGOU"; // API key is handled by the environment
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
     const response = await fetch(apiUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            // Authentication is done via an Authorization header
+            'Authorization': `Bearer ${deepseekApiKey}`
+        },
         body: JSON.stringify(payload)
     });
 
     if (!response.ok) {
-        const errorBody = await response.text();
-        console.error("API Error Response:", errorBody);
+        const errorBody = await response.json();
+        console.error("DeepSeek API Error:", errorBody);
         throw new Error(`API request failed with status ${response.status}`);
     }
 
     const result = await response.json();
     
-    if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
-        return result.candidates[0].content.parts[0].text.trim();
+    // The response structure is slightly different.
+    if (result.choices?.[0]?.message?.content) {
+        return result.choices[0].message.content.trim();
     } else {
-        console.error("Unexpected API response structure:", result);
-        throw new Error("Could not extract text from the API response.");
+        console.error("Unexpected DeepSeek API response structure:", result);
+        throw new Error("Could not extract text from the DeepSeek API response.");
     }
 }
+
+
 
 /**
  * Manages the UI loading state of the generate button.
