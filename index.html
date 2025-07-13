@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Alt Text Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f5f5f4; /* stone-100 */
+        }
+        .main-container {
+            transition: all 0.5s ease;
+        }
+        #image-uploader {
+            transition: all 0.3s ease;
+            background-size: cover;
+            background-position: center;
+        }
+        #image-uploader.dragover {
+            transform: scale(1.02);
+            box-shadow: 0 0 30px rgba(120, 53, 15, 0.2); /* amber-900 with opacity */
+            border-color: #92400e; /* amber-800 */
+        }
+        .spinner {
+            border-color: rgba(255, 255, 255, 0.3);
+            border-top-color: #ffffff;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .fade-in {
+            animation: fadeIn 0.6s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .change-image-overlay {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        #image-uploader:hover .change-image-overlay {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="text-stone-800 flex items-center justify-center min-h-screen p-4">
+
+    <div class="main-container max-w-4xl w-full mx-auto">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <div class="flex items-center justify-center gap-3">
+                <svg class="h-10 w-10 text-amber-800" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
+                </svg>
+                <h1 class="text-4xl md:text-5xl font-bold text-stone-800 tracking-tight">AI Alt Text</h1>
+            </div>
+            <p class="text-stone-500 mt-3 text-lg">Instantly generate accessible descriptions for your images.</p>
+        </header>
+
+        <main class="grid grid-cols-1 md:grid-cols-2 gap-8 bg-white rounded-2xl shadow-2xl shadow-stone-300/30 p-8">
+            <!-- Left Column: Uploader -->
+            <div class="flex flex-col items-center justify-center">
+                <div id="image-uploader" class="relative w-full h-80 border-2 border-dashed border-stone-300 rounded-xl p-4 text-center cursor-pointer hover:border-amber-700 flex items-center justify-center">
+                    <input type="file" id="file-input" class="hidden" accept="image/*">
+                    
+                    <div id="upload-prompt" class="flex flex-col items-center justify-center text-stone-500">
+                        <svg class="h-16 w-16 text-stone-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                        </svg>
+                        <p class="mt-4 text-sm font-semibold text-amber-800">Click to upload or drag & drop</p>
+                        <p class="text-xs text-stone-400 mt-1">PNG, JPG, GIF up to 10MB</p>
+                    </div>
+
+                    <div id="change-image-prompt" class="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center rounded-xl change-image-overlay hidden">
+                        <div class="text-center text-white">
+                            <svg class="mx-auto h-10 w-10" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.667 0l3.182-3.182m0-4.991v4.99" />
+                            </svg>
+                            <p class="font-semibold mt-2">Choose a different image</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Controls & Result -->
+            <div class="flex flex-col justify-center">
+                <div id="initial-state-text" class="text-center md:text-left">
+                    <h2 class="text-2xl font-bold text-stone-700">Your AI Assistant</h2>
+                    <p class="text-stone-500 mt-2">Upload an image to get started. The generated alt text will appear here, ready for you to use.</p>
+                </div>
+                
+                <div id="result-area" class="hidden">
+                    <h2 class="text-2xl font-bold text-stone-700 mb-4">Generated Description</h2>
+                    <div class="relative bg-stone-100 p-4 rounded-lg border border-stone-200 min-h-[100px]">
+                        <p id="alt-text-result" class="text-stone-800 pr-10"></p>
+                        <button id="copy-btn" title="Copy to clipboard" class="absolute top-3 right-3 p-2 text-stone-400 hover:text-amber-800 rounded-md focus:outline-none focus:ring-2 ring-offset-2 ring-offset-stone-100 focus:ring-amber-700 transition-colors">
+                            <svg id="copy-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                             <svg id="check-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-600 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <button id="generate-btn" class="w-full bg-amber-800 text-white font-bold py-3 px-8 rounded-lg shadow-md hover:bg-amber-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-700 transition-all transform hover:scale-105 disabled:bg-stone-400 disabled:shadow-none disabled:transform-none disabled:cursor-not-allowed flex items-center justify-center gap-2" disabled>
+                        <svg id="btn-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.898 20.562L16.5 21.75l-.398-1.188a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.188-.398a2.25 2.25 0 001.423-1.423L16.5 15.75l.398 1.188a2.25 2.25 0 001.423 1.423l1.188.398-1.188.398a2.25 2.25 0 00-1.423 1.423z" />
+                        </svg>
+                        <span id="btn-text">Generate Text</span>
+                        <div id="btn-loader" class="hidden">
+                            <div class="spinner w-5 h-5 border-2"></div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </main>
+        
+        <!-- Custom Message Box -->
+        <div id="message-box" class="hidden fixed top-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg fade-in flex items-center gap-2">
+            <p id="message-text"></p>
+        </div>
+    </div>
+
+    <!-- The defer attribute is important. It ensures the script runs after the HTML is parsed. -->
+    <script src="script.js" defer></script>
+</body>
+</html>
