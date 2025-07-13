@@ -137,7 +137,7 @@ function handleFile(file) {
  * @returns {Promise<string>} The generated alt text.
  */
 async function generateAltText(imageData) {
-    const prompt = "Generate a concise and descriptive alt text for this image. The alt text should be suitable for screen readers, focusing on the main subject, setting, and context. Do not include introductory phrases like 'Image of' or 'A picture of'. Be direct and informative.";
+    const prompt = "Generate a concise and descriptive alt text for this image. The alt text should be suitable for screen readers Like Jaws and others, focusing on the main subject, setting, and context. Do not include introductory phrases like 'Image of' or 'A picture of'. Be direct and informative.";
 
     const payload = {
         contents: [{
