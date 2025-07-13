@@ -51,7 +51,6 @@
 <body class="text-stone-800 flex items-center justify-center min-h-screen p-4">
 
     <div class="main-container max-w-4xl w-full mx-auto">
-        <!-- Header -->
         <header class="text-center mb-8">
             <div class="flex items-center justify-center gap-3">
                 <svg class="h-10 w-10 text-amber-800" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -63,7 +62,6 @@
         </header>
 
         <main class="grid grid-cols-1 md:grid-cols-2 gap-8 bg-white rounded-2xl shadow-2xl shadow-stone-300/30 p-8">
-            <!-- Left Column: Uploader -->
             <div class="flex flex-col items-center justify-center">
                 <div id="image-uploader" class="relative w-full h-80 border-2 border-dashed border-stone-300 rounded-xl p-4 text-center cursor-pointer hover:border-amber-700 flex items-center justify-center">
                     <input type="file" id="file-input" class="hidden" accept="image/*">
@@ -87,7 +85,6 @@
                 </div>
             </div>
 
-            <!-- Right Column: Controls & Result -->
             <div class="flex flex-col justify-center">
                 <div id="initial-state-text" class="text-center md:text-left">
                     <h2 class="text-2xl font-bold text-stone-700">Your AI Assistant</h2>
@@ -123,13 +120,17 @@
             </div>
         </main>
         
-        <!-- Custom Message Box -->
         <div id="message-box" class="hidden fixed top-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg fade-in flex items-center gap-2">
             <p id="message-text"></p>
         </div>
-    </div>
 
-    <!-- The defer attribute is important. It ensures the script runs after the HTML is parsed. -->
+        <footer class="text-center mt-8">
+            <p class="text-stone-500">
+                Made by <a href="https://victorchiemeka.github.io/" target="_blank" rel="noopener noreferrer" class="font-medium text-amber-800 underline hover:text-amber-900 transition-colors">Victor Mmadu</a>
+            </p>
+        </footer>
+        </div>
+
     <script src="script.js" defer></script>
 </body>
 </html>
