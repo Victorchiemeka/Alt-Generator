@@ -1,12 +1,10 @@
 async function generateAltText(imageData) {
     // The API call now goes to YOUR function, not Google's.
     const response = await fetch('/.netlify/functions/generate-text', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ imageData: imageData }) // Send only the necessary data
-    });
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ imageData })
+});
 
     if (!response.ok) {
         // Handle errors returned from your own function.
