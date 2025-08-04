@@ -1,93 +1,65 @@
-// functions/generate-text.js
-
 exports.handler = async function (event) {
-  if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      headers: { Allow: 'POST', 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: 'Only POST allowed' }),
-    };
-  }
-
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: 'API key is not set.' }),
-    };
-  }
-
-  let imageData;
-  let mimeType = 'image/jpeg'; // default
-  try {
-    const body = JSON.parse(event.body || '{}');
-    imageData = body.imageData;
-    if (body.mimeType) mimeType = body.mimeType;
-    if (!imageData || typeof imageData !== 'string') {
-      throw new Error('imageData missing or invalid');
-    }
-  } catch (err) {
-    return {
-      statusCode: 400,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: 'Bad request', error: err.message }),
-    };
-  }
-
-  const prompt = `Generate a single concise descriptive alt text for the image. Start with "Image of" or "A photo of", mention the main subject and any obvious context, and keep it under 125 characters.`;
-
-  const model = 'gemini-2.0-flash'; // or another available Gemini model
-  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-
-  const payload = {
-    contents: [
-      {
-        parts: [
-          { text: prompt },
-          { inlineData: { mimeType, data: imageData } },
-        ],
-      },
-    ],
-    generationConfig: {
-      temperature: 0.2,
-      candidateCount: 1,
-      maxOutputTokens: 60, // adjust if you want longer/shorter alt text
-    },
-  };
-
-  try {
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    const text = await response.text();
-    if (!response.ok) {
-      console.error('Gemini API error:', response.status, text);
-      return {
-        statusCode: response.status,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: 'Gemini API error', detail: text }),
-      };
+    if (event.httpMethod !== 'POST') {
+        return {
+            statusCode: 405,
+            body: JSON.stringify({ message: 'Only POST allowed' }),
+        };
     }
 
-    // forward the full Gemini response
-    return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
-      body: text,
-    };
-  } catch (error) {
-    console.error('Function error:', error);
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: 'Internal error while contacting Gemini.',
-        error: error.message,
-      }),
-    };
-  }
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+        return {
+            statusCode: 500,
+            body: JSON.stringify({ message: 'API key is not set.' }),
+        };
+    }
+
+    try {
+        const { imageData, mimeType } = JSON.parse(event.body);
+        if (!imageData) {
+            return { statusCode: 400, body: JSON.stringify({ message: 'imageData is required.' }) };
+        }
+
+        const prompt = "Generate a concise and descriptive alt text for this image. The alt text should be suitable for screen readers, focusing on the main subject, setting, and context. Do not include introductory phrases like 'Image of' or 'A picture of'. Be direct and informative.";
+
+        const payload = {
+            contents: [{
+                parts: [
+                    { text: prompt },
+                    { inlineData: { mimeType: mimeType || 'image/jpeg', data: imageData } }
+                ]
+            }],
+            generationConfig: {
+                temperature: 0.4,
+                candidateCount: 1,
+                maxOutputTokens: 80,
+            }
+        };
+
+        const model = 'gemini-1.5-flash-latest';
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            console.error('Gemini API Error:', result);
+            const errorMessage = result?.error?.message || 'Failed to generate text.';
+            return { statusCode: response.status, body: JSON.stringify({ message: errorMessage }) };
+        }
+
+        return {
+            statusCode: 200,
+            body: JSON.stringify(result)
+        };
+
+    } catch (error) {
+        console.error('Function Error:', error);
+        return { statusCode: 500, body: JSON.stringify({ message: 'An internal error occurred.' }) };
+    }
 };

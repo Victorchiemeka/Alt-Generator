@@ -7,6 +7,7 @@ const resultArea = document.getElementById('result-area');
 const initialStateText = document.getElementById('initial-state-text');
 const btnLoader = document.getElementById('btn-loader');
 const btnText = document.getElementById('btn-text');
+const btnIcon = document.getElementById('btn-icon');
 const copyBtn = document.getElementById('copy-btn');
 const copyIcon = document.getElementById('copy-icon');
 const checkIcon = document.getElementById('check-icon');
@@ -17,23 +18,36 @@ const changeImagePrompt = document.getElementById('change-image-prompt');
 
 let currentImageData = null;
 
-function showMessage(msg, type = 'info', duration = 3000) {
+function showMessage(msg, type = 'error', duration = 3000) {
     messageText.textContent = msg;
-    messageBox.classList.remove('hidden');
-    messageBox.style.backgroundColor = type === 'error' ? '#b91c1c' : '#166534';
+    messageBox.classList.remove('hidden', 'bg-red-600', 'bg-green-600');
+
+    if (type === 'success') {
+        messageBox.classList.add('bg-green-600');
+    } else {
+        messageBox.classList.add('bg-red-600');
+    }
+
     setTimeout(() => {
         messageBox.classList.add('hidden');
     }, duration);
 }
 
 function setLoading(loading) {
+    generateBtn.disabled = loading;
+    
+    // Disable the uploader to prevent race conditions
     if (loading) {
-        generateBtn.disabled = true;
+        uploader.style.pointerEvents = 'none';
+        uploader.style.opacity = '0.6';
         btnLoader.classList.remove('hidden');
+        btnIcon.classList.add('hidden');
         btnText.textContent = 'Generating...';
     } else {
-        generateBtn.disabled = false;
+        uploader.style.pointerEvents = 'auto';
+        uploader.style.opacity = '1';
         btnLoader.classList.add('hidden');
+        btnIcon.classList.remove('hidden');
         btnText.textContent = 'Generate Text';
     }
 }
@@ -43,30 +57,34 @@ function fileToBase64(file) {
         const reader = new FileReader();
         reader.onload = () => {
             const dataUrl = reader.result;
-            const base64 = dataUrl.split(',')[1]; // strip prefix
-            resolve(base64);
+            const base64 = dataUrl.split(',')[1];
+            resolve({ base64: base64, mimeType: file.type, preview: dataUrl });
         };
         reader.onerror = () => reject(reader.error);
         reader.readAsDataURL(file);
     });
 }
 
-async function callGenerateAltText(imageData) {
-    const response = await fetch('/.netlify/functions/generate-text', { // <--- corrected path
+async function callGenerateAltText(imageData, mimeType) {
+    const response = await fetch('/.netlify/functions/generate-text', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageData })
+        body: JSON.stringify({ imageData, mimeType })
     });
-    if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`Server error ${response.status}: ${text}`);
-    }
+
     const result = await response.json();
+
+    if (!response.ok) {
+        const errorMessage = result?.error?.message || 'The request to the server failed.';
+        throw new Error(errorMessage);
+    }
+
     if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
         return result.candidates[0].content.parts[0].text.trim();
     }
+    
     console.error('Unexpected API shape', result);
-    throw new Error('No alt text returned');
+    throw new Error('Could not extract alt text from the API response.');
 }
 
 async function handleFile(file) {
@@ -75,14 +93,17 @@ async function handleFile(file) {
         return;
     }
     try {
-        const base64 = await fileToBase64(file);
-        currentImageData = base64;
+        const { base64, mimeType, preview } = await fileToBase64(file);
+        currentImageData = { data: base64, type: mimeType };
 
-        // show preview
-        uploader.style.backgroundImage = `url(${URL.createObjectURL(file)})`;
+        uploader.style.backgroundImage = `url(${preview})`;
         uploadPrompt.classList.add('hidden');
         changeImagePrompt.classList.remove('hidden');
+        uploader.classList.remove('border-dashed');
         generateBtn.disabled = false;
+
+        resultArea.classList.add('hidden');
+        initialStateText.classList.remove('hidden');
     } catch (err) {
         console.error(err);
         showMessage('Failed to read image.', 'error');
@@ -95,12 +116,14 @@ uploader.addEventListener('click', () => fileInput.click());
 ['dragenter', 'dragover'].forEach(evt => {
     uploader.addEventListener(evt, e => {
         e.preventDefault();
+        e.stopPropagation();
         uploader.classList.add('dragover');
     });
 });
 ['dragleave', 'drop'].forEach(evt => {
     uploader.addEventListener(evt, e => {
         e.preventDefault();
+        e.stopPropagation();
         uploader.classList.remove('dragover');
     });
 });
@@ -119,11 +142,12 @@ generateBtn.addEventListener('click', async () => {
     if (!currentImageData) return;
     setLoading(true);
     try {
-        const altText = await callGenerateAltText(currentImageData);
+        const altText = await callGenerateAltText(currentImageData.data, currentImageData.type);
         altTextResult.textContent = altText;
         initialStateText.classList.add('hidden');
         resultArea.classList.remove('hidden');
-        showMessage('Alt text generated');
+        resultArea.classList.add('fade-in');
+        showMessage('Alt text generated!', 'success');
     } catch (err) {
         console.error(err);
         showMessage(err.message, 'error');
@@ -142,8 +166,8 @@ copyBtn.addEventListener('click', async () => {
         setTimeout(() => {
             checkIcon.classList.add('hidden');
             copyIcon.classList.remove('hidden');
-        }, 1200);
+        }, 2000);
     } catch {
-        showMessage('Copy failed', 'error');
+        showMessage('Copy failed.', 'error');
     }
 });
