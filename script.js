@@ -75,7 +75,7 @@ async function callGenerateAltText(imageData, mimeType) {
     const result = await response.json();
 
     if (!response.ok) {
-        const errorMessage = result?.error?.message || 'The request to the server failed.';
+        const errorMessage = result?.message || 'The request to the server failed.';
         throw new Error(errorMessage);
     }
 
