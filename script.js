@@ -148,7 +148,7 @@ async function generateAltText(imageData) {
         }],
     };
 
-    const apiKey = "AIzaSyBupM9Ei4g5Q7xlh2-oW3i3NwCY5blqGOU"; // API key is handled by the environment
+   
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
     const response = await fetch(apiUrl, {
